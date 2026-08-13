@@ -1,22 +1,30 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+
 code: .
+
 command: >-
   python train-model-parameters.py
   --training_data ${{inputs.training_data}}
   --reg_rate ${{inputs.reg_rate}}
   --metrics_output ${{outputs.metrics_output}}
+
 inputs:
   training_data:
     type: uri_file
     path: azureml:diabetes-data@latest
+
   reg_rate:
-    type: number
-    default: 0.01
+    type: literal
+    value: 0.01
+
 outputs:
   metrics_output:
     type: uri_folder
+
 environment: azureml:AzureML-sklearn-1.0-ubuntu20.04-py38-cpu@latest
+
 compute: azureml:aml-cluster
+
 experiment_name: diabetes-training
 display_name: diabetes-train-command
 description: diabetes training job
