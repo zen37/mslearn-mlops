@@ -1,29 +1,32 @@
-# Name of the workflow (visible in GitHub Actions UI)
 name: Manually trigger an Azure Machine Learning job
 
-# Trigger: Manually run from GitHub UI
 on:
   workflow_dispatch:
 
 jobs:
   train:
-    # Run on a GitHub-hosted Ubuntu runner
     runs-on: ubuntu-latest
-    steps:
-      # Step 1: Fetch repository code into the runner
-      - name: Check out repo
-        uses: actions/checkout@main
 
-      # Step 2: Install Azure ML CLI extension
-      - name: Install az ml extension
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Install Azure ML extension
         run: az extension add -n ml -y
 
-      # Step 3: Authenticate with Azure using stored credentials
       - name: Azure login
         uses: azure/login@v2
         with:
-          creds: ${{secrets.AZURE_CREDENTIALS}}  # GitHub Secret for Azure auth
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Step 4: Submit Azure ML job (stream logs, job definition in src/job.yml, use GitHub vars for RG/workspace)
       - name: Run Azure Machine Learning training job
-        run: az ml job create -f src/job.yml --stream --resource-group ${{vars.AZURE_RESOURCE_GROUP}} --workspace-name ${{vars.AZURE_WORKSPACE_NAME}}
+        run: |
+          az ml job create \
+            -f src/job.yml \
+            --stream \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --workspace-name ${{ vars.AZURE_WORKSPACE_NAME }}
