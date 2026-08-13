@@ -9,21 +9,36 @@ jobs:
   train:
     # Run on a GitHub-hosted Ubuntu runner
     runs-on: ubuntu-latest
+
     steps:
       # Step 1: Fetch repository code into the runner
       - name: Check out repo
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
 
-      # Step 2: Install Azure ML CLI extension
-      - name: Install az ml extension
-        run: az extension add -n ml -y
+      # Step 2: Install Azure CLI (required before adding ML extension)
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
-      # Step 3: Authenticate with Azure using stored credentials
+      # Step 3: Install/upgrade Azure ML CLI extension
+      # (Old versions do NOT support literal inputs)
+      - name: Update Azure ML extension
+        run: |
+          az extension remove -n ml || true
+          az extension add -n ml --upgrade
+
+      # Step 4: Authenticate with Azure using stored credentials
       - name: Azure login
         uses: azure/login@v2
         with:
-          creds: ${{secrets.AZURE_CREDENTIALS}}  # GitHub Secret for Azure auth
+          creds: ${{ secrets.AZURE_CREDENTIALS }}  # GitHub Secret for Azure auth
 
-      # Step 4: Submit Azure ML job (stream logs, job definition in src/job.yml, use GitHub vars for RG/workspace)
+      # Step 5: Submit Azure ML job (stream logs, job definition in src/job.yml)
+      # Uses GitHub vars for RG/workspace
       - name: Run Azure Machine Learning training job
-        run: az ml job create -f src/job.yml --stream --resource-group ${{vars.AZURE_RESOURCE_GROUP}} --workspace-name ${{vars.AZURE_WORKSPACE_NAME}}
+        run: |
+          az ml job create \
+            -f src/job.yml \
+            --stream \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --workspace-name ${{ vars.AZURE_WORKSPACE_NAME }}
